@@ -354,8 +354,19 @@ class MemoryAPIWithCurator:
                 from .transcript_curator import TranscriptCurator
                 import os
                 
+                # Validate transcript path - prevent path traversal
+                allowed_dir = os.path.abspath(os.getcwd())
+                resolved_path = os.path.abspath(request.transcript_path)
+                if not resolved_path.startswith(allowed_dir + os.sep) and resolved_path != allowed_dir:
+                    return TranscriptCurationResponse(
+                        success=False,
+                        trigger=request.trigger,
+                        memories_curated=0,
+                        message=f"Path traversal denied: {request.transcript_path} is outside allowed directory"
+                    )
+                
                 # Validate transcript exists
-                if not os.path.exists(request.transcript_path):
+                if not os.path.exists(resolved_path):
                     return TranscriptCurationResponse(
                         success=False,
                         trigger=request.trigger,
