@@ -12,8 +12,9 @@ import time
 import uvicorn
 from typing import Dict, List, Optional, Any, Literal
 from pydantic import BaseModel
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from loguru import logger
 
 # Import the memory engine
@@ -107,13 +108,39 @@ class MemoryAPIWithCurator:
         )
         
         # Enable CORS
+        # In production, set CORS_ORIGINS env var to specific origins (comma-separated)
+        import os as _os
+        cors_origins_str = _os.getenv("CORS_ORIGINS", "*")
+        cors_origins = [o.strip() for o in cors_origins_str.split(",")] if cors_origins_str != "*" else ["*"]
         self.app.add_middleware(
             CORSMiddleware,
-            allow_origins=["*"],
+            allow_origins=cors_origins,
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],
         )
+        
+        # Optional API key authentication
+        self.api_key = _os.getenv("API_KEY")
+        if self.api_key:
+            logger.info("🔑 API key authentication enabled")
+            
+            @self.app.middleware("http")
+            async def api_key_middleware(request: Request, call_next):
+                # Allow health check and docs without auth
+                if request.url.path in ("/health", "/docs", "/openapi.json", "/redoc"):
+                    return await call_next(request)
+                auth_header = request.headers.get("Authorization", "")
+                if auth_header.startswith("Bearer "):
+                    provided_key = auth_header[7:]
+                else:
+                    provided_key = request.query_params.get("api_key", "")
+                if provided_key != self.api_key:
+                    return JSONResponse(
+                        status_code=401,
+                        content={"detail": "Invalid or missing API key"}
+                    )
+                return await call_next(request)
         
         # Use config default if retrieval_mode not specified
         if retrieval_mode is None:
