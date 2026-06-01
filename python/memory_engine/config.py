@@ -59,13 +59,13 @@ class CuratorConfig:
     # Note: {command} will be replaced with the detected claude path
     TEMPLATES = {
         'claude-code': {
-            'session_resume': '{command} --resume {session_id} -p "{user_message}" --append-system-prompt "{system_prompt}" --output-format json',
+            'session_resume': '{command} --resume "{session_id}" -p "{user_message}" --append-system-prompt "{system_prompt}" --output-format json',
             'direct_query': '{command} -p "{prompt}" --append-system-prompt "{system_prompt}" --output-format json --max-turns 1',
             # One-shot transcript curation - no session resumption, just analyze provided transcript
             'transcript_curation': '{command} -p "{prompt}" --output-format json --max-turns 1'
         },
         'one-claude': {
-            'session_resume': '{command} -n --resume {session_id} --system-prompt "{system_prompt}" --format json "{user_message}"',
+            'session_resume': '{command} -n --resume "{session_id}" --system-prompt "{system_prompt}" --format json "{user_message}"',
             'direct_query': '{command} --append-system-prompt "{system_prompt}" --output-format json --max-turns 1 --print "{prompt}"',
             'transcript_curation': '{command} --output-format json --max-turns 1 --print "{prompt}"'
         }
