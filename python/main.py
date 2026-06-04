@@ -68,6 +68,8 @@ def main():
              "- hybrid: Start with vector, escalate to Claude for complex queries"
     )
     
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
+
     args = parser.parse_args()
     
     # Configure logging
