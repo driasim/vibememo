@@ -67,7 +67,13 @@ def main():
              "- smart_vector: Intelligent vector search with metadata (fast, smart)\n"
              "- hybrid: Start with vector, escalate to Claude for complex queries"
     )
-    
+
+    parser.add_argument(
+        "--db-path",
+        default=None,
+        help="Path to the SQLite database file (default: auto-detected from storage config)"
+    )
+
     args = parser.parse_args()
     
     # Configure logging
