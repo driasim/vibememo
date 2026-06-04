@@ -68,6 +68,8 @@ def main():
              "- hybrid: Start with vector, escalate to Claude for complex queries"
     )
     
+    parser.add_argument("--max-connections", type=int, help="Maximum concurrent connections")
+
     args = parser.parse_args()
     
     # Configure logging
