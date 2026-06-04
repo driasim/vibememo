@@ -68,6 +68,8 @@ def main():
              "- hybrid: Start with vector, escalate to Claude for complex queries"
     )
     
+    parser.add_argument("--version", action="store_true", help="Show version and exit")
+
     args = parser.parse_args()
     
     # Configure logging
