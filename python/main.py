@@ -68,6 +68,8 @@ def main():
              "- hybrid: Start with vector, escalate to Claude for complex queries"
     )
     
+    parser.add_argument("--auto-migrate", action="store_true", help="Auto-run database migrations on startup")
+
     args = parser.parse_args()
     
     # Configure logging
