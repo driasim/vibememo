@@ -68,6 +68,8 @@ def main():
              "- hybrid: Start with vector, escalate to Claude for complex queries"
     )
     
+    parser.add_argument("--cors-origins", metavar="ORIGINS", help="Comma-separated allowed CORS origins")
+
     args = parser.parse_args()
     
     # Configure logging
