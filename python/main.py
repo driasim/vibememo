@@ -68,6 +68,8 @@ def main():
              "- hybrid: Start with vector, escalate to Claude for complex queries"
     )
     
+    parser.add_argument("--config", "-c", metavar="PATH", help="Path to config file")
+
     args = parser.parse_args()
     
     # Configure logging
