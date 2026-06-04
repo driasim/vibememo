@@ -68,6 +68,8 @@ def main():
              "- hybrid: Start with vector, escalate to Claude for complex queries"
     )
     
+    parser.add_argument("--quiet", action="store_true", help="Suppress non-error output")
+
     args = parser.parse_args()
     
     # Configure logging
