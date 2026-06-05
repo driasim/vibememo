@@ -1,3 +1,4 @@
+import shlex
 """
 Configuration for the Memory Engine Curator.
 
