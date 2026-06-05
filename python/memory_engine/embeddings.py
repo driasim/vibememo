@@ -63,7 +63,7 @@ class EmbeddingGenerator:
             return embedding.tolist()
         except Exception as e:
             logger.error(f"Failed to generate embedding: {e}")
-            return [0.0] * self.get_embedding_dimension()
+            raise
     
     def embed_batch(self, texts: List[str]) -> List[List[float]]:
         """
@@ -87,9 +87,7 @@ class EmbeddingGenerator:
             return [emb.tolist() for emb in embeddings]
         except Exception as e:
             logger.error(f"Failed to generate batch embeddings: {e}")
-            # Return zero vectors as fallback
-            dim = self.get_embedding_dimension()
-            return [[0.0] * dim for _ in texts]
+            raise
     
     def get_embedding_dimension(self) -> int:
         """Get the dimension of embeddings produced by this model"""
