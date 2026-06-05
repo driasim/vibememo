@@ -1,3 +1,4 @@
+# Typeerror handling
 """
 Transcript-Based Curator - Universal curation from CLI transcripts.
 
