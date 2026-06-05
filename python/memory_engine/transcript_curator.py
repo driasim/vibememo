@@ -1,4 +1,3 @@
-# Typeerror handling
 """
 Transcript-Based Curator - Universal curation from CLI transcripts.
 
@@ -339,7 +338,11 @@ class TranscriptCurator:
             # Parse CLI output using Curator's method
             try:
                 output_json = json.loads(stdout_str)
-                response_text = self._curator._extract_response_from_cli_output(output_json)
+                if not isinstance(output_json, dict):
+                    logger.warning("CLI output parsed as non-dict JSON, treating as raw text")
+                    response_text = stdout_str
+                else:
+                    response_text = self._curator._extract_response_from_cli_output(output_json)
             except json.JSONDecodeError:
                 response_text = stdout_str
             
