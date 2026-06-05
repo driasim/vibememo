@@ -1,3 +1,4 @@
+# Auth guard
 """
 Enhanced Memory Engine API with Claude Curator Support
 
