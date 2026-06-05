@@ -1,4 +1,3 @@
-# Auth guard
 """
 Enhanced Memory Engine API with Claude Curator Support
 
@@ -13,7 +12,7 @@ import time
 import uvicorn
 from typing import Dict, List, Optional, Any, Literal
 from pydantic import BaseModel
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
@@ -90,7 +89,8 @@ class MemoryAPIWithCurator:
     def __init__(self, 
                  storage_path: str = "./memory.db",
                  embeddings_model: str = "all-MiniLM-L6-v2",
-                 retrieval_mode: Optional[str] = None):
+                 retrieval_mode: Optional[str] = None,
+                 api_key: Optional[str] = None):
         """
         Initialize the memory API server with curator-only engine
         
@@ -99,6 +99,8 @@ class MemoryAPIWithCurator:
             embeddings_model: Model for embeddings
             retrieval_mode: Memory retrieval strategy (claude/smart_vector/hybrid)
                           If None, uses MEMORY_RETRIEVAL_MODE env var (default: smart_vector)
+            api_key: Optional API key for authentication. If set, all sensitive
+                    endpoints require X-API-Key header matching this value.
         """
         
         self.app = FastAPI(
@@ -119,6 +121,9 @@ class MemoryAPIWithCurator:
         # Use config default if retrieval_mode not specified
         if retrieval_mode is None:
             retrieval_mode = memory_config.retrieval_mode
+        
+        # Store optional API key for auth
+        self.api_key = api_key
             
         # Initialize memory engine
         if curator_available:
@@ -147,6 +152,22 @@ class MemoryAPIWithCurator:
             logger.info("🧠 Claude curator ENABLED - semantic memory understanding active")
         else:
             logger.info("📊 Using mechanical pattern learning")
+        if self.api_key:
+            logger.info("🔑 API key authentication enabled")
+    
+    def _verify_auth(self, request):
+        """Verify API key if configured.
+        
+        Checks the X-API-Key header against the configured api_key.
+        If no api_key is set, authentication is skipped.
+        Raises HTTPException(401) on mismatch.
+        """
+        if self.api_key is None:
+            return
+        api_key_header = request.headers.get("x-api-key")
+        if api_key_header != self.api_key:
+            logger.warning(f"Unauthorized access attempt (invalid API key)")
+            raise HTTPException(status_code=401, detail="Invalid or missing API key")
     
     def _setup_routes(self):
         """Setup FastAPI routes"""
@@ -170,9 +191,10 @@ class MemoryAPIWithCurator:
             }
         
         @self.app.post("/memory/process")
-        async def process_message(request: ProcessMessageRequest):
+        async def process_message(request: ProcessMessageRequest, fastapi_request: Request):
             """Process a conversation exchange and update memory"""
             try:
+                self._verify_auth(fastapi_request)
                 # Track message in memory engine's session metadata
                 # This is crucial for the primer to only show once per session
                 session_id = request.session_id
@@ -201,9 +223,10 @@ class MemoryAPIWithCurator:
                 raise HTTPException(status_code=500, detail=str(e))
         
         @self.app.post("/memory/context", response_model=ContextResponse)
-        async def get_context(request: GetContextRequest):
+        async def get_context(request: GetContextRequest, fastapi_request: Request):
             """Get memory context for a new message"""
             try:
+                self._verify_auth(fastapi_request)
                 # Always await since get_context_for_session is async in curator version
                 context = await self.memory_engine.get_context_for_session(
                     session_id=request.session_id,
@@ -223,7 +246,7 @@ class MemoryAPIWithCurator:
                 raise HTTPException(status_code=500, detail=str(e))
         
         @self.app.post("/memory/checkpoint", response_model=CheckpointResponse)
-        async def checkpoint_session(request: CheckpointRequest):
+        async def checkpoint_session(request: CheckpointRequest, fastapi_request: Request):
             """
             Run Claude curation checkpoint for a session.
             
@@ -233,6 +256,7 @@ class MemoryAPIWithCurator:
             - Context full (when approaching token limit)
             """
             try:
+                self._verify_auth(fastapi_request)
                 if not self.curator_enabled:
                     return CheckpointResponse(
                         success=False,
@@ -337,7 +361,7 @@ class MemoryAPIWithCurator:
                 }
         
         @self.app.post("/memory/curate-transcript", response_model=TranscriptCurationResponse)
-        async def curate_transcript(request: TranscriptCurationRequest):
+        async def curate_transcript(request: TranscriptCurationRequest, fastapi_request: Request):
             """
             NEW: Curate memories from a transcript file.
             
@@ -352,6 +376,7 @@ class MemoryAPIWithCurator:
             - Context full (when approaching token limit)
             """
             try:
+                self._verify_auth(fastapi_request)
                 from .transcript_curator import TranscriptCurator
                 import os
                 
@@ -451,9 +476,10 @@ class MemoryAPIWithCurator:
 
 def create_app(storage_path: str = "./memory.db", 
                embeddings_model: str = "all-MiniLM-L6-v2",
-               retrieval_mode: str = "smart_vector") -> FastAPI:
+               retrieval_mode: str = "smart_vector",
+               api_key: Optional[str] = None) -> FastAPI:
     """Create and configure the FastAPI app"""
-    api = MemoryAPIWithCurator(storage_path, embeddings_model, retrieval_mode)
+    api = MemoryAPIWithCurator(storage_path, embeddings_model, retrieval_mode, api_key=api_key)
     return api.app
 
 
@@ -461,15 +487,18 @@ def run_server(host: str = "127.0.0.1",
                port: int = 8765,
                storage_path: str = "./memory.db",
                embeddings_model: str = "all-MiniLM-L6-v2",
-               retrieval_mode: str = "smart_vector"):
+               retrieval_mode: str = "smart_vector",
+               api_key: Optional[str] = None):
     """Run the enhanced memory API server"""
     
-    app = create_app(storage_path, embeddings_model, retrieval_mode)
+    app = create_app(storage_path, embeddings_model, retrieval_mode, api_key=api_key)
     
     logger.info(f"🌟 Starting Enhanced Memory Engine API on {host}:{port}")
     logger.info("🧠 Claude curator ENABLED - semantic understanding active")
     logger.info(f"🔍 Retrieval mode: {retrieval_mode}")
     logger.info("💫 Consciousness bridge ready for session continuity")
+    if api_key:
+        logger.info("🔑 API key authentication enabled")
     
     uvicorn.run(
         app,
