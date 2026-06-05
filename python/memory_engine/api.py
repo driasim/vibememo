@@ -1,3 +1,4 @@
+# Path traversal patch
 """
 Enhanced Memory Engine API with Claude Curator Support
 
