@@ -1,4 +1,3 @@
-# Path traversal patch
 """
 Enhanced Memory Engine API with Claude Curator Support
 
@@ -355,7 +354,16 @@ class MemoryAPIWithCurator:
                 from .transcript_curator import TranscriptCurator
                 import os
                 
-                # Validate transcript exists
+                # Validate transcript exists - prevent path traversal
+                abs_path = os.path.abspath(request.transcript_path)
+                allowed_base = os.path.abspath(".")
+                if not abs_path.startswith(allowed_base):
+                    return TranscriptCurationResponse(
+                        success=False,
+                        trigger=request.trigger,
+                        memories_curated=0,
+                        message=f"Path traversal detected: {request.transcript_path}"
+                    )
                 if not os.path.exists(request.transcript_path):
                     return TranscriptCurationResponse(
                         success=False,
